@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-type LoggerProvider interface {
+type LoggingProvider interface {
 	Logger() Logger
 }
 

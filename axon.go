@@ -1,7 +1,15 @@
 package axon
 
+import (
+	"context"
+)
+
 type Axon interface {
 	DbalDriver
-	LoggerProvider
+	LoggingProvider
 	ConfigProvider
+
+	WithConfig(c Configurator)
+	WithLogger(l Logger)
+	RegisterRoutes(ctx context.Context, router *Router)
 }

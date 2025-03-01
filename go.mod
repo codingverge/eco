@@ -6,6 +6,7 @@ require (
 	github.com/dgraph-io/ristretto v1.0.0
 	github.com/gofrs/uuid v4.3.1+incompatible
 	github.com/inhies/go-bytesize v0.0.0-20220417184213-4913239db9cf
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/knadh/koanf/maps v0.1.1
 	github.com/knadh/koanf/parsers/json v0.1.0
 	github.com/knadh/koanf/parsers/toml v0.1.0
