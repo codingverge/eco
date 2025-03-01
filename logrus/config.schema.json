@@ -1,5 +1,5 @@
 {
-  "$id": "eco://log-config",
+  "$id": "axon://log-config",
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Log",
   "description": "Configure logging using the following options. Logs will always be sent to stdout and stderr.",

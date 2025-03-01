@@ -10,8 +10,7 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/codingverge/eco/log"
-
+	"github.com/codingverge/axon"
 	"github.com/sirupsen/logrus"
 
 	"go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace"
@@ -21,7 +20,7 @@ import (
 	"github.com/ory/x/errorsx"
 )
 
-var _ log.Logger = &Logger{}
+var _ axon.Logger = &Logger{}
 
 type Logger struct {
 	*logrus.Entry
@@ -80,7 +79,7 @@ func (l *Logger) HTTPHeadersRedacted(h http.Header) map[string]interface{} {
 	return headers
 }
 
-func (l *Logger) WithRequest(r *http.Request) log.Logger {
+func (l *Logger) WithRequest(r *http.Request) axon.Logger {
 	headers := l.HTTPHeadersRedacted(r.Header)
 	if ua := r.UserAgent(); len(ua) > 0 {
 		headers["user-agent"] = ua
@@ -118,7 +117,7 @@ func (l *Logger) WithRequest(r *http.Request) log.Logger {
 	return ll
 }
 
-func (l *Logger) WithSpanFromContext(ctx context.Context) log.Logger {
+func (l *Logger) WithSpanFromContext(ctx context.Context) axon.Logger {
 	spanCtx := trace.SpanContextFromContext(ctx)
 	if !spanCtx.IsValid() {
 		return l
@@ -205,13 +204,13 @@ func (l *Logger) Panicf(format string, args ...interface{}) {
 	l.Logf(logrus.PanicLevel, format, args...)
 }
 
-func (l *Logger) WithFields(f logrus.Fields) *Logger {
+func (l *Logger) WithFields(f logrus.Fields) axon.Logger {
 	ll := *l
 	ll.Entry = l.Entry.WithFields(f)
 	return &ll
 }
 
-func (l *Logger) WithField(key string, value interface{}) log.Logger {
+func (l *Logger) WithField(key string, value interface{}) axon.Logger {
 	ll := *l
 	ll.Entry = l.Entry.WithField(key, value)
 	return &ll
@@ -227,11 +226,11 @@ func (l *Logger) maybeRedact(value interface{}) interface{} {
 	return value
 }
 
-func (l *Logger) WithSensitiveField(key string, value interface{}) log.Logger {
+func (l *Logger) WithSensitiveField(key string, value interface{}) axon.Logger {
 	return l.WithField(key, l.maybeRedact(value))
 }
 
-func (l *Logger) WithError(err error) log.Logger {
+func (l *Logger) WithError(err error) axon.Logger {
 	if err == nil {
 		return l
 	}
