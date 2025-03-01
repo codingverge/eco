@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/codingverge/eco/log"
+	"github.com/codingverge/axon"
 	"github.com/ory/herodot"
 	"github.com/pkg/errors"
 	"github.com/sirupsen/logrus"
@@ -83,17 +83,17 @@ func TestTextLogger(t *testing.T) {
 	debugger := New(ForceFormat("text"), ForceLevel(logrus.DebugLevel))
 	warner := New(ForceFormat("text"), ForceLevel(logrus.WarnLevel))
 	for k, tc := range []struct {
-		l         log.Logger
+		l         axon.Logger
 		expect    []string
 		notExpect []string
-		call      func(l log.Logger)
+		call      func(l axon.Logger)
 	}{
 		{
 			l: audit,
 			expect: []string{"logrus_test.go", "logrus.TestTextLogger",
 				"audience=audit",
 				"An error occurred.", "message:some error", "trace", "testing.tRunner"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithError(errors.New("some error")).Error("An error occurred.")
 			},
 		},
@@ -102,7 +102,7 @@ func TestTextLogger(t *testing.T) {
 			expect: []string{"logrus_test.go", "logrus.TestTextLogger",
 				"audience=application",
 				"An error occurred.", "message:some error", "trace", "testing.tRunner"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithError(errors.New("some error")).Error("An error occurred.")
 			},
 		},
@@ -117,7 +117,7 @@ func TestTextLogger(t *testing.T) {
 				"remote:127.0.0.1:63233", "scheme:http", "path:/foo/bar",
 			},
 			notExpect: []string{"logrus_test.go", "logrus.TestTextLogger", "testing.tRunner", "?bar=foo"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithRequest(fakeRequest).Error("An error occurred.")
 			},
 		},
@@ -127,7 +127,7 @@ func TestTextLogger(t *testing.T) {
 				"audience=application",
 				"An error occurred.", "message:The requested resource could not be found", "reason:some reason",
 				"status:Not Found", "status_code:404", "debug:some debug", "trace", "testing.tRunner"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithError(errors.WithStack(herodot.ErrNotFound.WithReason("some reason").WithDebug("some debug"))).Error("An error occurred.")
 			},
 		},
@@ -135,7 +135,7 @@ func TestTextLogger(t *testing.T) {
 			l: debugger,
 			expect: []string{"audience=application",
 				"An error occurred.", "message:some error"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithError(errors.New("some error")).Error("An error occurred.")
 			},
 		},
@@ -144,7 +144,7 @@ func TestTextLogger(t *testing.T) {
 			expect: []string{"audience=application",
 				"An error occurred.", "message:some error"},
 			notExpect: []string{"logrus_test.go", "logrus.TestTextLogger", "trace", "testing.tRunner"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithError(errors.New("some error")).Error("An error occurred.")
 			},
 		},
@@ -152,7 +152,7 @@ func TestTextLogger(t *testing.T) {
 			l:         debugger,
 			expect:    []string{"audience=application", "baz!", "foo=bar"},
 			notExpect: []string{"logrus_test.go", "logrus.TestTextLogger"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithField("foo", "bar").Info("baz!")
 			},
 		},
@@ -170,35 +170,35 @@ func TestTextLogger(t *testing.T) {
 				"x-session-token:2198ef09ac09d09ff098dd123ab128353",
 				"authorization:Bearer 2198ef09ac09d09ff098dd123ab128353",
 			},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.WithRequest(fakeRequest).Debug()
 			},
 		},
 		{
 			l:         tracer,
 			notExpect: []string{"?bar=foo"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.Printf("%s", fakeRequest.URL)
 			},
 		},
 		{
 			l:      New(ForceFormat("text"), ForceLevel(logrus.TraceLevel), LeakSensitive()),
 			expect: []string{"?bar=foo"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.Printf("%s", fakeRequest.URL)
 			},
 		},
 		{
 			l:         tracer,
 			notExpect: []string{"RawQuery:bar=foo"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.Printf("%+v", *fakeRequest.URL)
 			},
 		},
 		{
 			l:      New(ForceFormat("text"), ForceLevel(logrus.TraceLevel), LeakSensitive()),
 			expect: []string{"RawQuery:bar=foo"},
-			call: func(l log.Logger) {
+			call: func(l axon.Logger) {
 				l.Printf("%+v", *fakeRequest.URL)
 			},
 		},

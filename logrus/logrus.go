@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/codingverge/eco/log"
+	"github.com/codingverge/axon"
 	"github.com/ory/x/stringsx"
 	gelf "github.com/seatgeek/logrus-gelf-formatter"
 	"github.com/sirupsen/logrus"
@@ -38,7 +38,7 @@ type (
 //go:embed config.schema.json
 var ConfigSchema string
 
-const ConfigSchemaID = "eco://log-config"
+const ConfigSchemaID = "axon://log-config"
 
 // AddConfigSchema adds the logging schema to the compiler.
 // The interface is specified instead of `jsonschema.Compiler` to allow the use of any jsonschema library fork or version.
@@ -203,7 +203,7 @@ func New(opts ...Option) *Logger {
 	}
 }
 
-func NewAudit(opts ...Option) log.Logger {
+func NewAudit(opts ...Option) axon.Logger {
 	return New(opts...).WithField("audience", "audit")
 }
 
