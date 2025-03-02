@@ -2,21 +2,28 @@ package driver
 
 import (
 	"context"
-	"fmt"
+	"crypto/tls"
+	"errors"
 	"io"
+	"net"
+	"net/http"
+	"time"
 
 	"github.com/codingverge/axon"
+	"github.com/codingverge/axon/config"
 	"github.com/codingverge/axon/dbal"
-	"github.com/codingverge/axon/driver/config"
 	"github.com/codingverge/axon/logrus"
+	"github.com/ory/graceful"
+	"github.com/urfave/negroni"
+	"golang.org/x/sync/errgroup"
 )
 
 // registering DefaultDriver to dbal
-//func init() {
-//	dbal.RegisterDriver(func() axon.Dbal {
-//		return NewDefaultDriver()
-//	})
-//}
+func init() {
+	dbal.RegisterDriver(func() axon.Dbal {
+		return NewDefaultDriver()
+	})
+}
 
 func NewDefaultDriver() *DefaultDriver {
 	return &DefaultDriver{}
@@ -27,19 +34,19 @@ type DefaultDriver struct {
 	c axon.DriverConfigure
 }
 
-func (d *DefaultDriver) WithLogger(l axon.Logger) axon.Driver {
-	d.l = l
-	return d
+func (r *DefaultDriver) WithLogger(l axon.Logger) axon.Driver {
+	r.l = l
+	return r
 }
 
-func (d *DefaultDriver) WithConfig(c axon.DriverConfigure) axon.Driver {
-	d.c = c
-	return d
+func (r *DefaultDriver) WithConfig(c axon.DriverConfigure) axon.Driver {
+	r.c = c
+	return r
 }
 
 var _ axon.Driver = &DefaultDriver{}
 
-func New(ctx context.Context, stdOutOrErr io.Writer, dOpts ...axon.DriverOption) (axon.Driver, error) {
+func New(ctx context.Context, stdOutOrErr io.Writer, dOpts []axon.DriverOption, cOpts []config.Option) (axon.Driver, error) {
 	opts := axon.NewOptions(dOpts)
 	l := opts.Logger()
 	if l == nil {
@@ -48,7 +55,7 @@ func New(ctx context.Context, stdOutOrErr io.Writer, dOpts ...axon.DriverOption)
 	c := opts.Config()
 	if c == nil {
 		var err error
-		c, err = config.New(ctx)
+		c, err = NewDriverConfig(ctx, cOpts...)
 		if err != nil {
 			l.WithError(err).Error("Unable to instantiate configuration.")
 			return nil, err
@@ -62,26 +69,58 @@ func New(ctx context.Context, stdOutOrErr io.Writer, dOpts ...axon.DriverOption)
 	return r, nil
 }
 
-func (d *DefaultDriver) CanHandle(dsn string) bool {
+func (r *DefaultDriver) CanHandle(dsn string) bool {
 	return true
 }
 
-func (d *DefaultDriver) Ping() error {
+func (r *DefaultDriver) Ping() error {
 	return nil
 }
 
-func (d *DefaultDriver) PingContext(ctx context.Context) error {
+func (r *DefaultDriver) PingContext(ctx context.Context) error {
 	return nil
 }
 
-func (d *DefaultDriver) Logger() axon.Logger {
-	if d.l == nil {
-		d.l = logrus.New()
+func (r *DefaultDriver) Logger() axon.Logger {
+	if r.l == nil {
+		r.l = logrus.New()
 	}
-	return d.l
+	return r.l
 }
 
-func (d *DefaultDriver) RunE() error {
-	fmt.Println("starting server")
-	return nil
+func (r *DefaultDriver) RunE(ctx context.Context) error {
+	g, ctx := errgroup.WithContext(ctx)
+	r.server(ctx, g)
+	return g.Wait()
+}
+
+func (r *DefaultDriver) server(ctx context.Context, eg *errgroup.Group) {
+	n := negroni.New()
+	var handler http.Handler = n
+	server := graceful.WithDefaults(&http.Server{
+		Handler:           handler,
+		TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12},
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      120 * time.Second,
+		IdleTimeout:       600 * time.Second,
+	})
+	addr := "0.0.0.0:8080"
+	eg.Go(func() error {
+		r.l.Printf("Starting the httpd on: %s", addr)
+		if err := graceful.GracefulContext(ctx, func() error {
+			listener, err := net.Listen("tcp", addr)
+			if err != nil {
+				return err
+			}
+			return server.Serve(listener)
+		}, server.Shutdown); err != nil {
+			if !errors.Is(err, context.Canceled) {
+				r.l.Errorf("Failed to gracefully shutdown httpd: %s", err)
+				return err
+			}
+		}
+		r.l.Printf("httpd was shutdown gracefully")
+		return nil
+	})
 }

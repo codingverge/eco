@@ -1,5 +1,7 @@
 package axon
 
+import "context"
+
 type Driver interface {
 	Dbal
 	LoggingProvider
@@ -7,7 +9,7 @@ type Driver interface {
 	WithLogger(l Logger) Driver
 	WithConfig(c DriverConfigure) Driver
 
-	RunE() error
+	RunE(ctx context.Context) error
 }
 
 type Options struct {

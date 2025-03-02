@@ -1,8 +1,7 @@
-package config
+package driver
 
 import (
 	"context"
-
 	"github.com/codingverge/axon"
 	"github.com/codingverge/axon/config"
 )
@@ -14,8 +13,8 @@ const (
 	KeyServerHost          = "server.host"
 )
 
-func New(ctx context.Context) (axon.DriverConfigure, error) {
-	c, err := config.New(ctx, []byte(ConfigSchema))
+func NewDriverConfig(ctx context.Context, opts ...config.Option) (axon.DriverConfigure, error) {
+	c, err := config.New(ctx, []byte(ConfigSchema), opts...)
 	if err != nil {
 		return nil, err
 	}
