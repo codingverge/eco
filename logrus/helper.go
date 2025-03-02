@@ -133,8 +133,9 @@ func (l *Logger) WithSpanFromContext(ctx context.Context) axon.Logger {
 	return l.WithField("otel", traces)
 }
 
-func (l *Logger) WithOutStream(w io.Writer) {
+func (l *Logger) WithOutStream(w io.Writer) axon.Logger {
 	l.Entry.Logger.Out = w
+	return l
 }
 
 func (l *Logger) Logf(level logrus.Level, format string, args ...interface{}) {

@@ -70,8 +70,6 @@ func New(ctx context.Context, schema []byte, modifiers ...Option) (*Config, erro
 	return p, nil
 }
 
-var _ axon.Configurator = &Config{}
-
 const (
 	FlagConfig = "config"
 	Delimiter  = "."

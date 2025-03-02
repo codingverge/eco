@@ -13,7 +13,7 @@ type Logger interface {
 	WithField(key string, value interface{}) Logger
 	WithRequest(r *http.Request) Logger
 	WithError(err error) Logger
-	WithOutStream(w io.Writer)
+	WithOutStream(w io.Writer) Logger
 
 	Info(v ...interface{})
 	Infof(format string, args ...interface{})
