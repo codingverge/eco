@@ -1,14 +1,18 @@
 package axon
 
-import "context"
+import (
+	"context"
+	"github.com/julienschmidt/httprouter"
+)
 
 type Driver interface {
 	Dbal
 	LoggingProvider
+	ConfigProvider
 
+	Router() *httprouter.Router
 	WithLogger(l Logger) Driver
 	WithConfig(c DriverConfigure) Driver
-
 	RunE(ctx context.Context) error
 }
 

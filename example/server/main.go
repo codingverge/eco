@@ -20,6 +20,7 @@ var serverCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, _ []string) error {
 		ctx := cmd.Context()
 		drv, err := driver.New(ctx, cmd.OutOrStderr(), nil, []config.Option{config.WithFlags(cmd.Flags())})
+
 		if err != nil {
 			return err
 		}

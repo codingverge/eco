@@ -1,1 +1,6 @@
 dsn: memory
+
+log:
+  level: debug
+  format: json
+  leak_sensitive_values: true

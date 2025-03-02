@@ -78,7 +78,6 @@ func TestGelfFormatter(t *testing.T) {
 }
 
 func TestTextLogger(t *testing.T) {
-	audit := NewAudit(ForceFormat("text"), ForceLevel(logrus.TraceLevel))
 	tracer := New(ForceFormat("text"), ForceLevel(logrus.TraceLevel))
 	debugger := New(ForceFormat("text"), ForceLevel(logrus.DebugLevel))
 	warner := New(ForceFormat("text"), ForceLevel(logrus.WarnLevel))
@@ -88,15 +87,6 @@ func TestTextLogger(t *testing.T) {
 		notExpect []string
 		call      func(l axon.Logger)
 	}{
-		{
-			l: audit,
-			expect: []string{"logrus_test.go", "logrus.TestTextLogger",
-				"audience=audit",
-				"An error occurred.", "message:some error", "trace", "testing.tRunner"},
-			call: func(l axon.Logger) {
-				l.WithError(errors.New("some error")).Error("An error occurred.")
-			},
-		},
 		{
 			l: tracer,
 			expect: []string{"logrus_test.go", "logrus.TestTextLogger",

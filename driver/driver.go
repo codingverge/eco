@@ -13,6 +13,7 @@ import (
 	"github.com/codingverge/axon/config"
 	"github.com/codingverge/axon/dbal"
 	"github.com/codingverge/axon/logrus"
+	"github.com/julienschmidt/httprouter"
 	"github.com/ory/graceful"
 	"github.com/urfave/negroni"
 	"golang.org/x/sync/errgroup"
@@ -32,6 +33,27 @@ func NewDefaultDriver() *DefaultDriver {
 type DefaultDriver struct {
 	l axon.Logger
 	c axon.DriverConfigure
+
+	n *negroni.Negroni
+	r *httprouter.Router
+}
+
+func (r *DefaultDriver) Negroni() *negroni.Negroni {
+	if r.n == nil {
+		r.n = negroni.New()
+	}
+	return r.n
+}
+
+func (r *DefaultDriver) Router() *httprouter.Router {
+	if r.r == nil {
+		r.r = httprouter.New()
+	}
+	return r.r
+}
+
+func (r *DefaultDriver) Config() axon.DriverConfigure {
+	return r.c
 }
 
 func (r *DefaultDriver) WithLogger(l axon.Logger) axon.Driver {
@@ -55,7 +77,7 @@ func New(ctx context.Context, stdOutOrErr io.Writer, dOpts []axon.DriverOption, 
 	c := opts.Config()
 	if c == nil {
 		var err error
-		c, err = NewDriverConfig(ctx, cOpts...)
+		c, err = NewDriverConfig(ctx, l, cOpts...)
 		if err != nil {
 			l.WithError(err).Error("Unable to instantiate configuration.")
 			return nil, err
@@ -95,32 +117,32 @@ func (r *DefaultDriver) RunE(ctx context.Context) error {
 }
 
 func (r *DefaultDriver) server(ctx context.Context, eg *errgroup.Group) {
-	n := negroni.New()
-	var handler http.Handler = n
 	server := graceful.WithDefaults(&http.Server{
-		Handler:           handler,
+		Handler:           r.Negroni(),
 		TLSConfig:         &tls.Config{MinVersion: tls.VersionTLS12},
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       600 * time.Second,
 	})
-	addr := "0.0.0.0:8080"
+
+	r.Negroni().UseHandler(http.MaxBytesHandler(r.Router(), 5*1024*1024 /* 5 MB */))
+
 	eg.Go(func() error {
-		r.l.Printf("Starting the httpd on: %s", addr)
+		r.Logger().Printf("Starting the httpd on: %s", negroni.DefaultAddress)
 		if err := graceful.GracefulContext(ctx, func() error {
-			listener, err := net.Listen("tcp", addr)
+			listener, err := net.Listen("tcp", negroni.DefaultAddress)
 			if err != nil {
 				return err
 			}
 			return server.Serve(listener)
 		}, server.Shutdown); err != nil {
 			if !errors.Is(err, context.Canceled) {
-				r.l.Errorf("Failed to gracefully shutdown httpd: %s", err)
+				r.Logger().Errorf("Failed to gracefully shutdown httpd: %s", err)
 				return err
 			}
 		}
-		r.l.Printf("httpd was shutdown gracefully")
+		r.Logger().Printf("httpd was shutdown gracefully")
 		return nil
 	})
 }

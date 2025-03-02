@@ -35,17 +35,7 @@ func (l *Logger) LeakSensitiveData() bool {
 	return l.leakSensitive
 }
 
-func (l *Logger) Logrus() *logrus.Logger {
-	return l.Entry.Logger
-}
-
-func (l *Logger) NewEntry() *Logger {
-	ll := *l
-	ll.Entry = logrus.NewEntry(l.Logger)
-	return &ll
-}
-
-func (l *Logger) WithContext(ctx context.Context) *Logger {
+func (l *Logger) WithContext(ctx context.Context) axon.Logger {
 	ll := *l
 	ll.Entry = l.Logger.WithContext(ctx)
 	return &ll
@@ -156,12 +146,30 @@ func (l *Logger) Logf(level logrus.Level, format string, args ...interface{}) {
 	l.Entry.Logf(level, format, args...)
 }
 
+func (l *Logger) Log(level logrus.Level, args ...interface{}) {
+	if !l.leakSensitive {
+		for i, arg := range args {
+			switch urlArg := arg.(type) {
+			case url.URL:
+				urlCopy := url.URL{Scheme: urlArg.Scheme, Host: urlArg.Host, Path: urlArg.Path}
+				args[i] = urlCopy
+			case *url.URL:
+				urlCopy := url.URL{Scheme: urlArg.Scheme, Host: urlArg.Host, Path: urlArg.Path}
+				args[i] = &urlCopy
+			default:
+				continue
+			}
+		}
+	}
+	l.Entry.Log(level, args...)
+}
+
 func (l *Logger) Tracef(format string, args ...interface{}) {
 	l.Logf(logrus.TraceLevel, format, args...)
 }
 
 func (l *Logger) Debug(args ...interface{}) {
-	l.Entry.Debug(args...)
+	l.Log(logrus.DebugLevel, args...)
 }
 
 func (l *Logger) Debugf(format string, args ...interface{}) {
@@ -172,16 +180,16 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 	l.Logf(logrus.InfoLevel, format, args...)
 }
 
-func (l *Logger) Info(v ...interface{}) {
-	l.Entry.Info(v...)
+func (l *Logger) Info(args ...interface{}) {
+	l.Log(logrus.InfoLevel, args...)
 }
 
 func (l *Logger) Error(args ...interface{}) {
-	l.Entry.Error(args...)
+	l.Log(logrus.ErrorLevel, args...)
 }
 
 func (l *Logger) Printf(format string, args ...interface{}) {
-	l.Infof(format, args...)
+	l.Entry.Printf(format, args...)
 }
 
 func (l *Logger) Warnf(format string, args ...interface{}) {

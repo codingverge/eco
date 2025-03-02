@@ -13,13 +13,15 @@ const (
 	KeyServerHost          = "server.host"
 )
 
-func NewDriverConfig(ctx context.Context, opts ...config.Option) (axon.DriverConfigure, error) {
+func NewDriverConfig(ctx context.Context, l axon.Logger, opts ...config.Option) (axon.DriverConfigure, error) {
 	c, err := config.New(ctx, []byte(ConfigSchema), opts...)
 	if err != nil {
 		return nil, err
 	}
+	l.UseConfig(c)
 	return &DriverConfig{
 		Config: c,
+		l:      l,
 	}, nil
 }
 

@@ -3,12 +3,12 @@ package logrus
 import (
 	"bytes"
 	_ "embed"
+	"github.com/codingverge/axon"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/codingverge/axon"
 	"github.com/ory/x/stringsx"
 	gelf "github.com/seatgeek/logrus-gelf-formatter"
 	"github.com/sirupsen/logrus"
@@ -64,7 +64,6 @@ func newLogger(parent *logrus.Logger, o *options) *logrus.Logger {
 
 	setLevel(l, o)
 	setFormatter(l, o)
-
 	l.ReportCaller = o.reportCaller || l.IsLevelEnabled(logrus.TraceLevel)
 	return l
 }
@@ -81,6 +80,7 @@ func setLevel(l *logrus.Logger, o *options) {
 			l.Level = logrus.InfoLevel
 		}
 	}
+	l.ReportCaller = o.reportCaller || l.IsLevelEnabled(logrus.TraceLevel)
 }
 
 func setFormatter(l *logrus.Logger, o *options) {
@@ -203,14 +203,10 @@ func New(opts ...Option) *Logger {
 	}
 }
 
-func NewAudit(opts ...Option) axon.Logger {
-	return New(opts...).WithField("audience", "audit")
-}
-
-func (l *Logger) UseConfig(c configurator) {
-	l.leakSensitive = l.leakSensitive || c.Bool("log.leak_sensitive_values")
-	l.redactionText = stringsx.Coalesce(c.String("log.redaction_text"), l.redactionText)
-	o := newOptions(append(l.opts, WithConfigurator(c)))
+func (l *Logger) UseConfig(configure axon.Configure) {
+	l.leakSensitive = l.leakSensitive || configure.Bool("log.leak_sensitive_values")
+	l.redactionText = stringsx.Coalesce(configure.String("log.redaction_text"), l.redactionText)
+	o := newOptions(append(l.opts, WithConfigurator(configure)))
 	setLevel(l.Entry.Logger, o)
 	setFormatter(l.Entry.Logger, o)
 }
