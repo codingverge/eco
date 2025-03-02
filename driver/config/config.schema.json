@@ -1,0 +1,58 @@
+{
+  "$id": "axon://driver-config",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Axon Driver Config",
+  "type": "object",
+  "properties": {
+    "dsn": {
+      "type": "string",
+      "title": "Data Source Name",
+      "description": "DSN is used to specify the database credentials as a connection URI.",
+      "examples": [
+        "postgres://user: password@postgresd:5432/database?sslmode=disable&max_conns=20&max_idle_conns=4",
+        "mysql://user:secret@tcp(mysqld:3306)/database?max_conns=20&max_idle_conns=4",
+        "cockroach://user@cockroachdb:26257/database?sslmode=disable&max_conns=20&max_idle_conns=4",
+        "sqlite:///var/lib/sqlite/db.sqlite?_fk=true&mode=rwc"
+      ]
+    },
+    "log": {
+      "title": "Log",
+      "description": "Configure logging using the following options. Logging will always be sent to stdout and stderr.",
+      "type": "object",
+      "properties": {
+        "level": {
+          "description": "Debug enables stack traces on errors. Can also be set using environment variable LOG_LEVEL.",
+          "type": "string",
+          "default": "info",
+          "enum": [
+            "trace",
+            "debug",
+            "info",
+            "warning",
+            "error",
+            "fatal",
+            "panic"
+          ]
+        },
+        "leak_sensitive_values": {
+          "type": "boolean",
+          "title": "Leak Sensitive Log Values",
+          "description": "If set will leak sensitive values (e.g. emails) in the logs."
+        },
+        "redaction_text": {
+          "type": "string",
+          "title": "Sensitive log value redaction text",
+          "description": "Text to use, when redacting sensitive log value."
+        },
+        "format": {
+          "description": "The log format can either be text or JSON.",
+          "type": "string",
+          "enum": ["json", "text"]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": ["dsn"],
+  "additionalProperties": false
+}

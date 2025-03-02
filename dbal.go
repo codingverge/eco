@@ -2,8 +2,8 @@ package axon
 
 import "context"
 
-// Driver represents a driver
-type DbalDriver interface {
+// Dbal represents a driver
+type Dbal interface {
 	// CanHandle returns true if the driver is capable of handling the given DSN or false otherwise.
 	CanHandle(dsn string) bool
 
